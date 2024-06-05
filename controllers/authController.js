@@ -14,18 +14,22 @@ const generateAuthToken = (user) => {
 
 
 const handleErrors = (err) => {
-  console.log("ERROR DETECHED")
   console.log(err.message);
   // let errors = { username: "", password: "" };
   let errors = err.message
 
+  if (err.message.includes("User validation failed: ")) {
 
-  // Validation errors
-  if (err.message.includes("user validation failed")) {
-    Object.values(err.errors).forEach(({ properties }) => {
-      errors[properties.path] = properties.message;
-    });
+    if (err.message.includes("User validation failed: username could not be found")) {
+      errors = "Your username / password was incorrect"
+    }
+    if (err.message.includes("User validation failed: password: Minimum password length is 6 characters")) {
+      errors = "Your password needs to be a minimum of 6 characters";
+    }
+    
   }
+
+  
 
   if (err.code === 11000) {
     errors.username = "That username is already in use";
@@ -73,7 +77,7 @@ module.exports.login_post = async (req, res) => {
     const user = await User.findOne({ username: username});
     console.log("this is running")
     if (user === null) {
-      throw new AppError("Username / Password not found",)
+      throw new AppError("User validation failed: username could not be found")
     }
 
     const validPass = await bcrypt.compare(password, user.password);
