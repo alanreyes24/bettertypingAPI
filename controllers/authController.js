@@ -29,13 +29,6 @@ const handleErrors = (err) => {
     
   }
 
-  
-
-  if (err.code === 11000) {
-    errors.username = "That username is already in use";
-    return errors;
-  }
-
   return errors;
 };
 
@@ -75,21 +68,24 @@ module.exports.login_post = async (req, res) => {
 
   try {
     const user = await User.findOne({ username: username});
-    console.log("this is running")
+
     if (user === null) {
       throw new AppError("User validation failed: username could not be found")
     }
 
     const validPass = await bcrypt.compare(password, user.password);
     if (!validPass) {
+
       console.log("invalid pass"); // also not even sure we're supposed to let them know that the password didn't match
       return res.status(400).json("password is incorrect"); // aren't i suppsoed to throw error instead?
     }
 
-    const token = generateAuthToken();
+    
+    const token = generateAuthToken(user);
     res.header("auth-token", token).send({ token });
-
+    console.log("test 1")
   } catch (err) {
+    console.log("login.post")
     const errors = handleErrors(err);
     res.status(400).json(errors);
   }
