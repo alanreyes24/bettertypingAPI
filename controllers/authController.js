@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const Test = require("../models/Test");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const AppError = require('../AppError')
@@ -32,6 +33,47 @@ const handleErrors = (err) => {
   return errors;
 };
 
+module.exports.test_post = async (req, res) => {
+  
+  const passedTest = req.body;
+  console.log(passedTest)
+
+  try {
+    const test = await Test.create({
+      userID: passedTest.userID,
+      words: {
+        wordsList: passedTest.words.wordList,
+        correctLetters: passedTest.words.correctLetters,
+        incorrectLetters: passedTest.words.incorrectLetters
+      },
+      settings: {
+        type: passedTest.settings.type,
+        length: passedTest.settings.length,
+        count: passedTest.settings.count
+      },
+      results: {
+        correctOnlyWPM: passedTest.results.correctOnlyWPM,
+        rawWPM: passedTest.results.rawWPM,
+        trueWPM: passedTest.results.trueWPM,
+        accuracy: passedTest.results.accuracy
+      }
+    });
+
+    // Assuming you want to send the created test document back in the response
+    res.send(test);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('An error occurred while processing your request.');
+  }
+}
+
+
+
+
+
+
+
+
 // Signup GET (for demonstration, typically not used)
 module.exports.signup_get = (req, res) => {
   res.send("signup get");
@@ -40,13 +82,11 @@ module.exports.signup_get = (req, res) => {
 // Signup POST
 module.exports.signup_post = async (req, res) => {
   const { username, password } = req.body;
-  console.log("got a signup request with:");
-  console.log(req.body);
+ 
 
   try {
     const user = await User.create({ username, password });
     res.status(201).json(user);
-    console.log("added new user to db");
   } catch (err) {
     const errors = handleErrors(err);
     res.status(400).json(errors);
@@ -63,8 +103,7 @@ module.exports.login_get = (req, res) => {
 module.exports.login_post = async (req, res) => {
 
   const { username, password } = req.body;
-  console.log("got a request with:")
-  console.log(req.body)
+
 
   try {
     const user = await User.findOne({ username: username});
@@ -83,9 +122,7 @@ module.exports.login_post = async (req, res) => {
     
     const token = generateAuthToken(user);
     res.header("auth-token", token).send({ token });
-    console.log("test 1")
   } catch (err) {
-    console.log("login.post")
     const errors = handleErrors(err);
     res.status(400).json(errors);
   }

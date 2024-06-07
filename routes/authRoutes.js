@@ -23,5 +23,7 @@ router.get("/auth/profile", verifyToken, async (req, res) => {
     }
 });
 
+router.post("/test", authController.test_post);
+
 
 module.exports = router;
