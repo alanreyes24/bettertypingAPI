@@ -6,6 +6,7 @@ const cors = require("cors");
 dotenv.config();
 
 const authRoutes = require("./routes/authRoutes");
+const testRoutes = require("./routes/testRoutes");
 
 const app = express();
 
@@ -17,12 +18,12 @@ app.use(express.json());
 app.use(cors());
 
 // Database connection
-mongoose.set('strictQuery', false);
+mongoose.set("strictQuery", false);
 
 mongoose
   .connect(process.env.CONNECT_URI, {
     useNewUrlParser: true,
-    useUnifiedTopology: true
+    useUnifiedTopology: true,
   })
   .then((result) => app.listen(3090))
   .catch((err) => console.log(err));
@@ -30,3 +31,4 @@ mongoose
 // Routes
 app.get("/", (req, res) => res.send("404 page not found"));
 app.use(authRoutes);
+app.use(testRoutes);
