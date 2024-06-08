@@ -2,8 +2,6 @@ const Test = require("../models/Test");
 
 module.exports.test_post = async (req, res) => {
   const passedTest = req.body;
-  console.log(passedTest);
-
   try {
     const test = await Test.create({
       userID: passedTest.userID,
@@ -39,4 +37,18 @@ module.exports.test_post = async (req, res) => {
       res.status(500).send("An error occurred while processing your request.");
     }
   }
+};
+
+module.exports.test_getByID = async (req, res) => {
+  console.log(req.params);
+  Test.findById(req.params.id, function (err, test) {
+    if (err) {
+      res.status(500).send(err);
+      res.end();
+    }
+    if (test) {
+      res.status(200).send(test);
+      res.end();
+    }
+  });
 };
