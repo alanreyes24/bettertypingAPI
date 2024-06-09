@@ -36,8 +36,11 @@ const resultsSchema = new mongoose.Schema({
 const testSchema = new mongoose.Schema({
   userID: {
     type: String,
-    required: [true, "UserID is required for the schema"],
-    unique: true,
+    required: true,
+  },
+  timestamp: {
+    type: Number,
+    required: true,
   },
   words: {
     type: wordsSchema,
@@ -55,7 +58,6 @@ const testSchema = new mongoose.Schema({
     type: Array,
     default: [],
     required: true,
-    unique: true,
   },
 });
 

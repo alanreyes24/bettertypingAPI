@@ -6,4 +6,6 @@ router.post("/test", testController.test_post);
 
 router.get("/test/:id", testController.test_getByID);
 
+router.get("/test/all/:userID", testController.test_getAllByUser);
+
 module.exports = router;
