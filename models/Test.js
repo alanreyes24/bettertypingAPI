@@ -36,6 +36,10 @@ const resultsSchema = new mongoose.Schema({
 const testSchema = new mongoose.Schema({
   userID: {
     type: String,
+    required: true,
+  },
+  username: {
+    type: String,
     // required: true,
   },
   timestamp: {

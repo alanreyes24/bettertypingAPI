@@ -1,4 +1,23 @@
+// testRoutes.js
+
 const Test = require("../models/Test");
+
+
+module.exports.test_getSetNumberOfTests = async (req, res) => {
+  
+  try {
+    let tests = await Test.find().sort({ "test.results.trueWPM": -1 }).exec();
+    if (tests.length === 0) {
+      return res.status(404).send('No tests found');
+    }
+
+    res.status(200).send(tests);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send(err.message);
+  }
+};
+
 
 module.exports.test_post = async (req, res) => {
   const passedTest = req.body;
@@ -6,18 +25,20 @@ module.exports.test_post = async (req, res) => {
   // check if user id has made a test with that same timestamp (should never happen, but should check)
 
   try {
+
     let unique = await Test.find({
       userID: passedTest.userID,
       timestamp: passedTest.timestamp,
     });
-    console.log("RUNS HERE")
 
 
-    // add unique test checking here later i guess not sure why we need tho lowk just makes debugging harder. lowkey
+
+    // add unique test checking here later i guess, not sure why we need tho lowk just makes debugging harder. lowkey
    
       try {
         const test = await Test.create({
           userID: passedTest.userID,
+          username: passedTest.username,
           words: {
             wordsList: passedTest.words.wordList,
             correctLetters: passedTest.words.correctLetters,
@@ -86,3 +107,4 @@ module.exports.test_getAllByUser = async (req, res) => {
     }
   });
 };
+
