@@ -6,7 +6,7 @@ const testController = require("../controllers/testController");
 
 router.post("/test", testController.test_post);
 
-router.get("/test/rankings", testController.test_getSetNumberOfTests);
+router.get("/test/rankings", testController.test_getTypeOfTests);
 
 router.get("/test/:id", testController.test_getByID);
 

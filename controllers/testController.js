@@ -3,20 +3,31 @@
 const Test = require("../models/Test");
 
 
-module.exports.test_getSetNumberOfTests = async (req, res) => {
-  
+module.exports.test_getTypeOfTests = async (req, res) => {
   try {
-    let tests = await Test.find().sort({ "test.results.trueWPM": -1 }).exec();
-    if (tests.length === 0) {
-      return res.status(404).send('No tests found');
+    // Extract the time (as duration) from the request query parameters
+    let { duration } = req.query;
+    duration = duration * 10;
+
+    // Filter tests based on the nested 'settings.length' and sort by 'results.trueWPM'
+    const filteredTests = await Test.aggregate([
+      { $unwind: "$results" }, // Unwinds the results array
+      { $match: { "settings.length": parseInt(duration) } }, // Filter tests by nested 'settings.length'
+      { $sort: { "results.trueWPM": -1 } } // Sorts by 'results.trueWPM' in descending order
+    ]);
+
+    if (filteredTests.length === 0) {
+      return res.status(404).send('No tests found matching the specified duration');
     }
 
-    res.status(200).send(tests);
+    res.status(200).send(filteredTests);
   } catch (err) {
     console.error(err);
     res.status(500).send(err.message);
   }
 };
+
+
 
 
 module.exports.test_post = async (req, res) => {
