@@ -10,9 +10,11 @@ module.exports.test_post = async (req, res) => {
       userID: passedTest.userID,
       timestamp: passedTest.timestamp,
     });
-    if (unique.length > 0) {
-      res.status(500).send("TEST IS NOT UNIQUE");
-    } else {
+    console.log("RUNS HERE")
+
+
+    // add unique test checking here later i guess not sure why we need tho lowk just makes debugging harder. lowkey
+   
       try {
         const test = await Test.create({
           userID: passedTest.userID,
@@ -51,7 +53,6 @@ module.exports.test_post = async (req, res) => {
             .send("An error occurred while processing your request.");
         }
       }
-    }
   } catch {
     res.status(500).send(error);
   }
