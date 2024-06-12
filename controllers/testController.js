@@ -1,7 +1,8 @@
 // testRoutes.js
 
 const Test = require("../models/Test");
-
+const User = require("../models/User");
+const jwt = require('jsonwebtoken');
 
 module.exports.test_getTypeOfTests = async (req, res) => {
   try {
@@ -28,7 +29,32 @@ module.exports.test_getTypeOfTests = async (req, res) => {
 };
 
 
+module.exports.test_getChartData = async (req, res) => {
 
+  const token = req.headers['token'];  
+
+  if (!token) {
+    return res.status(401).send('No token provided.');
+  }
+
+  try {
+
+    const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
+    
+    // Extract the userID from the user document
+    const userID = decoded._id;
+    console.log(userID)
+
+    // Use the userID to find the corresponding test data
+    const test = await Test.findOne({ userID: userID }).sort({ timestamp: -1 });
+
+    res.status(200).send(test);
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send(error.message);
+  }
+};
 
 module.exports.test_post = async (req, res) => {
   const passedTest = req.body;
