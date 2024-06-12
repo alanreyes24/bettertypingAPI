@@ -15,6 +15,14 @@ const wordsSchema = new mongoose.Schema({
     type: Object,
     default: {},
   },
+  trueWPMArray: {
+    type: Array,
+    default: [],
+  },
+  rawWPMArray: {
+    type: Array,
+    default: [],
+  }
 });
 
 // Define the Settings sub-schema
