@@ -6,7 +6,9 @@ const testController = require("../controllers/testController");
 
 router.post("/test", testController.test_post);
 
-router.get("/test/rankings", testController.test_getTypeOfTests);
+router.get("/test/timeRankings", testController.test_getTimeTestRankings);
+
+router.get("/test/wordRankings", testController.test_getWordTestRankings);
 
 router.get("/test/chartData", testController.test_getChartData)
 

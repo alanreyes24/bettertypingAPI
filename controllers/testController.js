@@ -4,7 +4,7 @@ const Test = require("../models/Test");
 const User = require("../models/User");
 const jwt = require('jsonwebtoken');
 
-module.exports.test_getTypeOfTests = async (req, res) => {
+module.exports.test_getTimeTestRankings = async (req, res) => {
   try {
     // Extract the time (as duration) from the request query parameters
     let { duration } = req.query;
@@ -12,11 +12,16 @@ module.exports.test_getTypeOfTests = async (req, res) => {
 
     // Filter tests based on the nested 'settings.length' and sort by 'results.trueWPM'
     const filteredTests = await Test.aggregate([
-      { $unwind: "$results" }, // Unwinds the results array
-      { $match: { "settings.length": parseInt(duration) } }, // Filter tests by nested 'settings.length'
+      { $unwind: "$results" }, // unwinds the settings array / object not sure what it is considered
+      { $unwind: "$settings"}, // unwinds the settings array / object not sure what it is considered
+      { $match: { 
+        "settings.length": parseInt(duration), // Filter tests by nested 'settings.length'
+        "settings.type": 'time' // Filter tests where 'settings.type' is 'time'
+      }},
       { $sort: { "results.trueWPM": -1 } } // Sorts by 'results.trueWPM' in descending order
     ]);
-
+    
+  
     if (filteredTests.length === 0) {
       return res.status(404).send('No tests found matching the specified duration');
     }
@@ -28,6 +33,35 @@ module.exports.test_getTypeOfTests = async (req, res) => {
   }
 };
 
+
+module.exports.test_getWordTestRankings = async (req, res) => {
+
+  try {
+
+    let { type } = req.query;
+
+    const filteredTests = await Test.aggregate([
+      { $unwind: "$results" }, // unwinds the settings array / object not sure what it is considered
+      { $unwind: "$settings"}, // unwinds the settings array / object not sure what it is considered
+      { $match: { 
+        "settings.type": 'words' // Filter tests where 'settings.type' is 'words'
+      }},
+      { $sort: { "results.trueWPM": -1 } } // Sorts by 'results.trueWPM' in descending order
+    ]);
+
+    res.status(200).send(filteredTests);
+
+
+  } catch (err) {
+
+    console.error(err);
+    res.status(500).send(err.message);
+
+  }
+
+
+
+}
 
 module.exports.test_getChartData = async (req, res) => {
 
