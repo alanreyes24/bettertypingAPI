@@ -1,6 +1,5 @@
 const express = require("express");
 const router = express.Router();
-const verifyToken = require("./verifyToken");
 const User = require("../models/User");
 const authController = require("../controllers/authController");
 
@@ -9,6 +8,19 @@ router.post("/auth/signup", authController.signup_post);
 
 router.get("/auth/login", authController.login_get);
 router.post("/auth/login", authController.login_post);
+
+const verifyToken = (req, res, next) => { // need to change this to it's own file later
+  const token = req.cookies["auth-token"];
+  if (!token) return res.status(401).send("Access Denied");
+
+  try {
+    const verified = jwt.verify(token, process.env.TOKEN_SECRET);
+    req.user = verified;
+    next();
+  } catch (err) {
+    res.status(400).send("Invalid Token");
+  }
+};
 
 router.get("/auth/profile", verifyToken, async (req, res) => {
   try {
@@ -22,6 +34,6 @@ router.get("/auth/profile", verifyToken, async (req, res) => {
   }
 });
 
-// router.post("/test", authController.test_post);
+
 
 module.exports = router;

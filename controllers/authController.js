@@ -12,22 +12,14 @@ const generateAuthToken = (user) => {
 
 const handleErrors = (err) => {
   console.log(err.message);
-  // let errors = { username: "", password: "" };
+  console.log(err)
   let errors = err.message;
 
   if (err.message.includes("User validation failed: ")) {
-    if (
-      err.message.includes(
-        "User validation failed: username could not be found"
-      )
-    ) {
+    if (err.message.includes("User validation failed: username could not be found")) {
       errors = "Your username / password was incorrect";
     }
-    if (
-      err.message.includes(
-        "User validation failed: password: Minimum password length is 6 characters"
-      )
-    ) {
+    if (err.message.includes("User validation failed: password: Minimum password length is 6 characters")) {
       errors = "Your password needs to be a minimum of 6 characters";
     }
   }
@@ -55,11 +47,10 @@ module.exports.signup_post = async (req, res) => {
 
 // Login GET (for demonstration, typically not used)
 module.exports.login_get = (req, res) => {
-  res.send("login get (shouldnt exist)");
+  res.send("login get (shouldn't exist)");
 };
 
 // Login POST
-
 module.exports.login_post = async (req, res) => {
   const { username, password } = req.body;
 
@@ -72,12 +63,15 @@ module.exports.login_post = async (req, res) => {
 
     const validPass = await bcrypt.compare(password, user.password);
     if (!validPass) {
-      console.log("invalid pass"); // also not even sure we're supposed to let them know that the password didn't match
-      return res.status(400).json("password is incorrect"); // aren't i suppsoed to throw error instead?
+      return res.status(400).json("password is incorrect");
     }
 
     const token = generateAuthToken(user);
-    res.header("auth-token", token).send({ token });
+    res.cookie("auth-token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+      sameSite: "Strict", // or "Lax" based on your requirements
+    }).json({ userId: user._id, username: user.username });
   } catch (err) {
     const errors = handleErrors(err);
     res.status(400).json(errors);
