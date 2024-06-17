@@ -5,28 +5,49 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 
 module.exports.test_getTimeTestRankings = async (req, res) => {
+
   try {
-    // Extract the time (as duration) from the request query parameters
-    let { duration } = req.query;
-    duration = duration * 10;
 
-    // Filter tests based on the nested 'settings.length' and sort by 'results.trueWPM'
-    const filteredTests = await Test.aggregate([
-      { $unwind: "$results" }, // unwinds the settings array / object not sure what it is considered
-      { $unwind: "$settings" }, // unwinds the settings array / object not sure what it is considered
-      {
-        $match: {
-          "settings.length": parseInt(duration), // Filter tests by nested 'settings.length'
-          "settings.type": "time", // Filter tests where 'settings.type' is 'time'
+    let duration = parseInt(req.query.duration || 0);
+    duration = duration * 10
+    let timeFrame = req.query.timeFrame;
+
+    console.log(duration)
+    console.log(timeFrame)
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    let filteredTests;
+
+    if (timeFrame === "all-time") {
+      filteredTests = await Test.aggregate([
+        { $unwind: "$results" },
+        { $unwind: "$settings" },
+        {
+          $match: {
+            "settings.length": duration,
+            "settings.type": "time",
+          },
         },
-      },
-      { $sort: { "results.trueWPM": -1 } }, // Sorts by 'results.trueWPM' in descending order
-    ]);
+        { $sort: { "results.trueWPM": -1 } },
+      ]);
+    } else if (timeFrame === "daily") {
+      filteredTests = await Test.aggregate([
+        { $unwind: "$results" },
+        { $unwind: "$settings" },
+        {
+          $match: {
+            "settings.length": duration,
+            "settings.type": "time",
+            "timestamp": { $gte: startOfDay },
+          },
+        },
+        { $sort: { "results.trueWPM": -1 } },
+      ]);
+    }
 
-    if (filteredTests.length === 0) {
-      return res
-        .status(404)
-        .send("No tests found matching the specified duration");
+    if (!filteredTests || filteredTests.length === 0) {
+      return res.status(404).send("No tests found matching the specified duration or time-frame");
     }
 
     res.status(200).send(filteredTests);
@@ -59,21 +80,21 @@ module.exports.test_getWordTestRankings = async (req, res) => {
 };
 
 module.exports.test_getChartData = async (req, res) => {
-  const token = req.headers["token"];
+
+  const token = req.cookies["auth-token"];
 
   if (!token) {
     return res.status(401).send("No token provided.");
   }
 
   try {
+
     const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
 
-    // Extract the userID from the user document
-    const userID = decoded._id;
-    console.log(userID);
+    const _id = decoded._id;
 
-    // Use the userID to find the corresponding test data
-    const test = await Test.findOne({ userID: userID }).sort({ timestamp: -1 });
+
+    const test = await Test.findOne({ userID: _id }).sort({ timestamp: -1 });
 
     res.status(200).send(test);
   } catch (error) {
@@ -85,61 +106,45 @@ module.exports.test_getChartData = async (req, res) => {
 module.exports.test_post = async (req, res) => {
   const passedTest = req.body;
 
-  // check if user id has made a test with that same timestamp (should never happen, but should check)
-
   try {
-    let unique = await Test.find({
+    const test = await Test.create({
       userID: passedTest.userID,
+      username: passedTest.username,
+      words: {
+        wordsList: passedTest.words.wordList,
+        correctLetters: passedTest.words.correctLetters,
+        incorrectLetters: passedTest.words.incorrectLetters,
+        trueWPMArray: passedTest.words.trueWPMArray,
+        rawWPMArray: passedTest.words.rawWPMArray,
+      },
+      settings: {
+        type: passedTest.settings.type,
+        length: passedTest.settings.length,
+        count: passedTest.settings.count,
+      },
+      results: {
+        correctOnlyWPM: passedTest.results.correctOnlyWPM,
+        rawWPM: passedTest.results.rawWPM,
+        trueWPM: passedTest.results.trueWPM,
+        accuracy: passedTest.results.accuracy,
+      },
+      eventLog: passedTest.eventLog,
       timestamp: passedTest.timestamp,
     });
 
-    // add unique test checking here later i guess, not sure why we need tho lowk just makes debugging harder. lowkey
+    // Assuming you want to send the created test document back in the response
+    res.status(200).send(test);
+  } catch (error) {
+    console.error(error);
 
-    try {
-      const test = await Test.create({
-        userID: passedTest.userID,
-        username: passedTest.username,
-        words: {
-          wordsList: passedTest.words.wordList,
-          correctLetters: passedTest.words.correctLetters,
-          incorrectLetters: passedTest.words.incorrectLetters,
-          trueWPMArray: passedTest.words.trueWPMArray,
-          rawWPMArray: passedTest.words.rawWPMArray,
-        },
-        settings: {
-          type: passedTest.settings.type,
-          length: passedTest.settings.length,
-          count: passedTest.settings.count,
-        },
-        results: {
-          correctOnlyWPM: passedTest.results.correctOnlyWPM,
-          rawWPM: passedTest.results.rawWPM,
-          trueWPM: passedTest.results.trueWPM,
-          accuracy: passedTest.results.accuracy,
-        },
-        eventLog: passedTest.eventLog,
-        timestamp: passedTest.timestamp,
-      });
-
-      // console.log(passedTest.eventLog);
-
-      // Assuming you want to send the created test document back in the response
-      res.status(200).send(test);
-    } catch (error) {
-      console.error(error);
-
-      if (error.code == 11000) {
-        res.status(500).send(error);
-      } else {
-        res
-          .status(500)
-          .send("An error occurred while processing your request.");
-      }
+    if (error.code == 11000) {
+      res.status(500).send(error);
+    } else {
+      res.status(500).send("An error occurred while processing your request.");
     }
-  } catch {
-    res.status(500).send(error);
   }
 };
+  
 
 module.exports.test_getByID = async (req, res) => {
   console.log(req.params);

@@ -71,7 +71,7 @@ module.exports.login_post = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", // Use secure cookies in production
       sameSite: "Strict", // or "Lax" based on your requirements
-    }).json({ userId: user._id, username: user.username });
+    }).json({ userID: user._id, username: user.username });
   } catch (err) {
     const errors = handleErrors(err);
     res.status(400).json(errors);
