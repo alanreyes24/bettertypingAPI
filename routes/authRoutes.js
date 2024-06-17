@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 const User = require("../models/User");
 const authController = require("../controllers/authController");
 
@@ -9,7 +10,8 @@ router.post("/auth/signup", authController.signup_post);
 router.get("/auth/login", authController.login_get);
 router.post("/auth/login", authController.login_post);
 
-const verifyToken = (req, res, next) => { // need to change this to it's own file later
+// Middleware to verify token from cookies
+const verifyToken = (req, res, next) => { 
   const token = req.cookies["auth-token"];
   if (!token) return res.status(401).send("Access Denied");
 
@@ -33,7 +35,5 @@ router.get("/auth/profile", verifyToken, async (req, res) => {
     res.status(500).send("Server Error");
   }
 });
-
-
 
 module.exports = router;
