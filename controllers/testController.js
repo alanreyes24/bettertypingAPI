@@ -5,17 +5,21 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 
 module.exports.test_getTimeTestRankings = async (req, res) => {
-
   try {
-
     let duration = parseInt(req.query.duration || 0);
-    duration = duration * 10
+    duration = duration * 10;
     let timeFrame = req.query.timeFrame;
 
-    console.log(duration)
-    console.log(timeFrame)
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+    console.log(duration);
+    console.log(timeFrame);
+
+    // Set startOfDay to the start of the current day in UTC and convert to Unix timestamp in milliseconds
+    const now = new Date();
+    const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const startOfDayTimestamp = startOfDay.getTime();
+
+    console.log("Start of Day (UTC):", startOfDay.toISOString());
+    console.log("Start of Day Timestamp:", startOfDayTimestamp);
 
     let filteredTests;
 
@@ -32,6 +36,10 @@ module.exports.test_getTimeTestRankings = async (req, res) => {
         { $sort: { "results.trueWPM": -1 } },
       ]);
     } else if (timeFrame === "daily") {
+      // Log all documents to see the timestamps
+      const allTests = await Test.find({}).limit(10); // Limiting to 10 for brevity
+      console.log("All Tests:", allTests);
+
       filteredTests = await Test.aggregate([
         { $unwind: "$results" },
         { $unwind: "$settings" },
@@ -39,11 +47,14 @@ module.exports.test_getTimeTestRankings = async (req, res) => {
           $match: {
             "settings.length": duration,
             "settings.type": "time",
-            "timestamp": { $gte: startOfDay },
+            "timestamp": { $gte: startOfDayTimestamp },
           },
         },
         { $sort: { "results.trueWPM": -1 } },
       ]);
+
+      // Log the retrieved tests to see the timestamp format
+      console.log("Filtered Tests:", filteredTests);
     }
 
     if (!filteredTests || filteredTests.length === 0) {
@@ -56,6 +67,7 @@ module.exports.test_getTimeTestRankings = async (req, res) => {
     res.status(500).send(err.message);
   }
 };
+
 
 module.exports.test_getWordTestRankings = async (req, res) => {
   try {
