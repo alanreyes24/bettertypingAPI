@@ -10,9 +10,6 @@ module.exports.test_getTimeTestRankings = async (req, res) => {
     duration = duration * 10;
     let timeFrame = req.query.timeFrame;
 
-    console.log(duration);
-    console.log(timeFrame);
-
     // Set startOfDay to the start of the current day in UTC and convert to Unix timestamp in milliseconds
     const now = new Date();
     const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
@@ -38,7 +35,6 @@ module.exports.test_getTimeTestRankings = async (req, res) => {
     } else if (timeFrame === "daily") {
       // Log all documents to see the timestamps
       const allTests = await Test.find({}).limit(10); // Limiting to 10 for brevity
-      console.log("All Tests:", allTests);
 
       filteredTests = await Test.aggregate([
         { $unwind: "$results" },
@@ -54,7 +50,6 @@ module.exports.test_getTimeTestRankings = async (req, res) => {
       ]);
 
       // Log the retrieved tests to see the timestamp format
-      console.log("Filtered Tests:", filteredTests);
     }
 
     if (!filteredTests || filteredTests.length === 0) {
@@ -71,18 +66,55 @@ module.exports.test_getTimeTestRankings = async (req, res) => {
 
 module.exports.test_getWordTestRankings = async (req, res) => {
   try {
-    let { type } = req.query;
 
-    const filteredTests = await Test.aggregate([
-      { $unwind: "$results" }, // unwinds the settings array / object not sure what it is considered
-      { $unwind: "$settings" }, // unwinds the settings array / object not sure what it is considered
-      {
-        $match: {
-          "settings.type": "words", // Filter tests where 'settings.type' is 'words'
+    let count = parseInt(req.query.count || 0);
+    let timeFrame = req.query.timeFrame;
+
+    // Set startOfDay to the start of the current day in UTC and convert to Unix timestamp in milliseconds
+    const now = new Date();
+    const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const startOfDayTimestamp = startOfDay.getTime();
+
+    console.log("Start of Day (UTC):", startOfDay.toISOString());
+    console.log("Start of Day Timestamp:", startOfDayTimestamp);
+
+    let filteredTests;
+
+    if (timeFrame === "all-time") {
+      filteredTests = await Test.aggregate([
+        { $unwind: "$results" },
+        { $unwind: "$settings" },
+        {
+          $match: {
+            "settings.count": count,
+            "settings.type": "words",
+          },
         },
-      },
-      { $sort: { "results.trueWPM": -1 } }, // Sorts by 'results.trueWPM' in descending order
-    ]);
+        { $sort: { "results.trueWPM": -1 } },
+      ]);
+    } else if (timeFrame === "daily") {
+      // Log all documents to see the timestamp
+
+      filteredTests = await Test.aggregate([
+        { $unwind: "$results" },
+        { $unwind: "$settings" },
+        {
+          $match: {
+            "settings.count": count,
+            "settings.type": "words",
+            "timestamp": { $gte: startOfDayTimestamp },
+          },
+        },
+        { $sort: { "results.trueWPM": -1 } },
+      ]);
+
+      // Log the retrieved tests to see the timestamp format
+      console.log("Filtered Word Tests:", filteredTests);
+    }
+
+    if (!filteredTests || filteredTests.length === 0) {
+      return res.status(404).send("No tests found matching the specified duration or time-frame");
+    }
 
     res.status(200).send(filteredTests);
   } catch (err) {
@@ -90,6 +122,7 @@ module.exports.test_getWordTestRankings = async (req, res) => {
     res.status(500).send(err.message);
   }
 };
+
 
 module.exports.test_getChartData = async (req, res) => {
 
@@ -159,7 +192,6 @@ module.exports.test_post = async (req, res) => {
   
 
 module.exports.test_getByID = async (req, res) => {
-  console.log(req.params);
 
   const result = await Test.findById(req.params.id).exec();
 
