@@ -27,10 +27,36 @@ const handleErrors = (err) => {
   return errors;
 };
 
-// Signup GET (for demonstration, typically not used)
-module.exports.signup_get = (req, res) => {
-  res.send("signup get");
-};
+module.exports.tokenCheck = async (req, res) => {
+  
+  const token = req.cookies["auth-token"];
+
+  if (!token) {
+    return res.status(401).send("No token provided.");
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
+
+    const _id = decoded._id;
+
+    const user = await User.findOne({ _id: _id });
+
+    res.status(200).json({ _id: user._id, username: user.username });
+
+  } catch (error) {
+    console.log(error);
+    if (error instanceof jwt.TokenExpiredError) {
+      return res.status(401).send("Token has expired.");
+    } else if (error instanceof jwt.JsonWebTokenError) {
+      return res.status(403).send("Invalid token.");
+    } else {
+      return res.status(500).send("An unexpected error occurred.");
+    }
+  }
+}
+
+
 
 // Signup POST
 module.exports.signup_post = async (req, res) => {
@@ -45,10 +71,7 @@ module.exports.signup_post = async (req, res) => {
   }
 };
 
-// Login GET (for demonstration, typically not used)
-module.exports.login_get = (req, res) => {
-  res.send("login get (shouldn't exist)");
-};
+
 
 // Login POST
 module.exports.login_post = async (req, res) => {

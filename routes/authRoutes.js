@@ -4,11 +4,13 @@ const jwt = require('jsonwebtoken');
 const User = require("../models/User");
 const authController = require("../controllers/authController");
 
-router.get("/auth/signup", authController.signup_get);
 router.post("/auth/signup", authController.signup_post);
 
-router.get("/auth/login", authController.login_get);
 router.post("/auth/login", authController.login_post);
+
+router.get("/auth/tokenCheck", authController.tokenCheck);
+
+
 
 // Middleware to verify token from cookies
 const verifyToken = (req, res, next) => { 
