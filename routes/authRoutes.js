@@ -10,6 +10,7 @@ router.post("/auth/login", authController.login_post);
 
 router.get("/auth/tokenCheck", authController.tokenCheck);
 
+router.post("/auth/logout", authController.logout);
 
 
 // Middleware to verify token from cookies

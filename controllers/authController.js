@@ -27,6 +27,34 @@ const handleErrors = (err) => {
   return errors;
 };
 
+module.exports.logout = async (req, res) => {
+  console.log("route hit")
+  const token = req.cookies["auth-token"];
+
+  const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
+  const _id = decoded._id;
+
+  try {
+
+    const user = await User.findOne({ _id: _id });
+
+   res.clearCookie('auth-token', {
+    path: '/',
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // Match the setting when the cookie was set
+    sameSite: 'Strict' // Optionally, you might need to match this as well
+  });
+
+  res.status(204).send()
+
+
+  } catch (error) {
+
+    console.log(error)
+
+  } 
+}
+
 module.exports.tokenCheck = async (req, res) => {
   
   const token = req.cookies["auth-token"];
@@ -36,6 +64,7 @@ module.exports.tokenCheck = async (req, res) => {
   }
 
   try {
+
     const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
 
     const _id = decoded._id;
@@ -71,8 +100,6 @@ module.exports.signup_post = async (req, res) => {
   }
 };
 
-
-
 // Login POST
 module.exports.login_post = async (req, res) => {
   const { username, password } = req.body;
@@ -96,6 +123,7 @@ module.exports.login_post = async (req, res) => {
       sameSite: "Strict", // or "Lax" based on your requirements
     }).json({ userID: user._id, username: user.username });
   } catch (err) {
+    console.log(error)
     const errors = handleErrors(err);
     res.status(400).json(errors);
   }
