@@ -30,7 +30,6 @@ const verifyToken = (req, res, next) => {
 router.get("/auth/profile", verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
-    console.log("User found:", user);
     if (!user) return res.status(404).send("User not found");
     res.send(user);
   } catch (err) {

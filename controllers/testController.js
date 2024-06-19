@@ -15,8 +15,7 @@ module.exports.test_getTimeTestRankings = async (req, res) => {
     const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const startOfDayTimestamp = startOfDay.getTime();
 
-    console.log("Start of Day (UTC):", startOfDay.toISOString());
-    console.log("Start of Day Timestamp:", startOfDayTimestamp);
+   
 
     let filteredTests;
 
@@ -75,9 +74,6 @@ module.exports.test_getWordTestRankings = async (req, res) => {
     const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const startOfDayTimestamp = startOfDay.getTime();
 
-    console.log("Start of Day (UTC):", startOfDay.toISOString());
-    console.log("Start of Day Timestamp:", startOfDayTimestamp);
-
     let filteredTests;
 
     if (timeFrame === "all-time") {
@@ -108,8 +104,6 @@ module.exports.test_getWordTestRankings = async (req, res) => {
         { $sort: { "results.trueWPM": -1 } },
       ]);
 
-      // Log the retrieved tests to see the timestamp format
-      console.log("Filtered Word Tests:", filteredTests);
     }
 
     if (!filteredTests || filteredTests.length === 0) {
@@ -203,7 +197,6 @@ module.exports.test_getByID = async (req, res) => {
 };
 
 module.exports.test_getAllByUser = async (req, res) => {
-  console.log(req.params);
 
   const result = await Test.find({ userID: req.params.userID }).exec();
 

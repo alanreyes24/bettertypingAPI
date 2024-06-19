@@ -28,15 +28,8 @@ const handleErrors = (err) => {
 };
 
 module.exports.logout = async (req, res) => {
-  console.log("route hit")
-  const token = req.cookies["auth-token"];
-
-  const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
-  const _id = decoded._id;
-
+  
   try {
-
-    const user = await User.findOne({ _id: _id });
 
    res.clearCookie('auth-token', {
     path: '/',
