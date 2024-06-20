@@ -78,9 +78,6 @@ module.exports.tokenCheck = async (req, res) => {
   }
 }
 
-
-
-// Signup POST
 module.exports.signup_post = async (req, res) => {
   const { username, password } = req.body;
 
@@ -93,7 +90,6 @@ module.exports.signup_post = async (req, res) => {
   }
 };
 
-// Login POST
 module.exports.login_post = async (req, res) => {
   const { username, password } = req.body;
 

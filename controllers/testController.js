@@ -197,12 +197,39 @@ module.exports.test_getByID = async (req, res) => {
 };
 
 module.exports.test_getAllByUser = async (req, res) => {
+  console.log("route hit")
+  const token = req.cookies["auth-token"];
+  
+  if (!token) {
+    return res.status(401).send("Access denied. No token provided.");
+  }
 
-  const result = await Test.find({ userID: req.params.userID }).exec();
+  try {
+    console.log('gets to try')
+    const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
+    const _id = decoded._id;
 
-  if (result != null) {
-    res.status(200).send(result);
-  } else {
-    res.status(500).send("no tests found");
+    const user = await User.findOne({ _id: _id });
+    
+    if (!user) {
+      return res.status(404).send("User not found.");
+    }
+
+    const allUserTests = await Test.find({ userID: _id });
+
+    if (!allUserTests) {
+      return res.status(404).send("No test for this user found");
+    }
+
+    if (allUserTests && allUserTests.length > 0) {
+      res.status(200).json(allUserTests);
+    } else {
+      res.status(404).send("No tests found for this user.");
+    }
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Internal Server Error");
   }
 };
+
