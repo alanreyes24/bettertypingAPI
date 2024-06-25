@@ -1,8 +1,8 @@
 // testRoutes.js
 
+const jwt = require("jsonwebtoken");
 const Test = require("../models/Test");
 const User = require("../models/User");
-const jwt = require("jsonwebtoken");
 
 module.exports.test_getTimeTestRankings = async (req, res) => {
   try {
@@ -12,10 +12,10 @@ module.exports.test_getTimeTestRankings = async (req, res) => {
 
     // Set startOfDay to the start of the current day in UTC and convert to Unix timestamp in milliseconds
     const now = new Date();
-    const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const startOfDay = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+    );
     const startOfDayTimestamp = startOfDay.getTime();
-
-   
 
     let filteredTests;
 
@@ -42,7 +42,7 @@ module.exports.test_getTimeTestRankings = async (req, res) => {
           $match: {
             "settings.length": duration,
             "settings.type": "time",
-            "timestamp": { $gte: startOfDayTimestamp },
+            timestamp: { $gte: startOfDayTimestamp },
           },
         },
         { $sort: { "results.trueWPM": -1 } },
@@ -52,7 +52,9 @@ module.exports.test_getTimeTestRankings = async (req, res) => {
     }
 
     if (!filteredTests || filteredTests.length === 0) {
-      return res.status(404).send("No tests found matching the specified duration or time-frame");
+      return res
+        .status(404)
+        .send("No tests found matching the specified duration or time-frame");
     }
 
     res.status(200).send(filteredTests);
@@ -62,16 +64,16 @@ module.exports.test_getTimeTestRankings = async (req, res) => {
   }
 };
 
-
 module.exports.test_getWordTestRankings = async (req, res) => {
   try {
-
     let count = parseInt(req.query.count || 0);
     let timeFrame = req.query.timeFrame;
 
     // Set startOfDay to the start of the current day in UTC and convert to Unix timestamp in milliseconds
     const now = new Date();
-    const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const startOfDay = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+    );
     const startOfDayTimestamp = startOfDay.getTime();
 
     let filteredTests;
@@ -98,16 +100,17 @@ module.exports.test_getWordTestRankings = async (req, res) => {
           $match: {
             "settings.count": count,
             "settings.type": "words",
-            "timestamp": { $gte: startOfDayTimestamp },
+            timestamp: { $gte: startOfDayTimestamp },
           },
         },
         { $sort: { "results.trueWPM": -1 } },
       ]);
-
     }
 
     if (!filteredTests || filteredTests.length === 0) {
-      return res.status(404).send("No tests found matching the specified duration or time-frame");
+      return res
+        .status(404)
+        .send("No tests found matching the specified duration or time-frame");
     }
 
     res.status(200).send(filteredTests);
@@ -117,9 +120,42 @@ module.exports.test_getWordTestRankings = async (req, res) => {
   }
 };
 
+module.exports.test_getAllByUser = async (req, res) => {
+  console.log("route hit");
+  const token = req.cookies["auth-token"];
 
-module.exports.test_getChartData = async (req, res) => {
+  if (!token) {
+    return res.status(401).send("Access denied. No token provided.");
+  }
 
+  try {
+    const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
+    const _id = decoded._id;
+
+    const user = await User.findOne({ _id: _id });
+
+    if (!user) {
+      return res.status(404).send("User not found.");
+    }
+
+    const allUserTests = await Test.find({ userID: _id });
+
+    if (!allUserTests) {
+      return res.status(404).send("No test for this user found");
+    }
+
+    if (allUserTests && allUserTests.length > 0) {
+      res.status(200).json(allUserTests);
+    } else {
+      res.status(404).send("No tests found for this user.");
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+module.exports.test_getUserMostRecentTest = async (req, res) => {
   const token = req.cookies["auth-token"];
 
   if (!token) {
@@ -127,11 +163,9 @@ module.exports.test_getChartData = async (req, res) => {
   }
 
   try {
-
     const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
 
     const _id = decoded._id;
-
 
     const test = await Test.findOne({ userID: _id }).sort({ timestamp: -1 });
 
@@ -183,53 +217,3 @@ module.exports.test_post = async (req, res) => {
     }
   }
 };
-  
-
-module.exports.test_getByID = async (req, res) => {
-
-  const result = await Test.findById(req.params.id).exec();
-
-  if (result != null) {
-    res.status(200).send(result);
-  } else {
-    res.status(500).send("test not found");
-  }
-};
-
-module.exports.test_getAllByUser = async (req, res) => {
-  console.log("route hit")
-  const token = req.cookies["auth-token"];
-  
-  if (!token) {
-    return res.status(401).send("Access denied. No token provided.");
-  }
-
-  try {
-    console.log('gets to try')
-    const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
-    const _id = decoded._id;
-
-    const user = await User.findOne({ _id: _id });
-    
-    if (!user) {
-      return res.status(404).send("User not found.");
-    }
-
-    const allUserTests = await Test.find({ userID: _id });
-
-    if (!allUserTests) {
-      return res.status(404).send("No test for this user found");
-    }
-
-    if (allUserTests && allUserTests.length > 0) {
-      res.status(200).json(allUserTests);
-    } else {
-      res.status(404).send("No tests found for this user.");
-    }
-
-  } catch (error) {
-    console.log(error);
-    res.status(500).send("Internal Server Error");
-  }
-};
-

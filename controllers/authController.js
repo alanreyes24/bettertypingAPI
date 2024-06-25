@@ -5,21 +5,29 @@ const AppError = require("../AppError");
 
 const generateAuthToken = (user) => {
   const token = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET, {
-    expiresIn: "1h",
+    expiresIn: "2h",
   });
   return token;
 };
 
 const handleErrors = (err) => {
   console.log(err.message);
-  console.log(err)
+  console.log(err);
   let errors = err.message;
 
   if (err.message.includes("User validation failed: ")) {
-    if (err.message.includes("User validation failed: username could not be found")) {
+    if (
+      err.message.includes(
+        "User validation failed: username could not be found"
+      )
+    ) {
       errors = "Your username / password was incorrect";
     }
-    if (err.message.includes("User validation failed: password: Minimum password length is 6 characters")) {
+    if (
+      err.message.includes(
+        "User validation failed: password: Minimum password length is 6 characters"
+      )
+    ) {
       errors = "Your password needs to be a minimum of 6 characters";
     }
   }
@@ -28,28 +36,21 @@ const handleErrors = (err) => {
 };
 
 module.exports.logout = async (req, res) => {
-  
   try {
+    res.clearCookie("auth-token", {
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // Match the setting when the cookie was set
+      sameSite: "Strict", // Optionally, you might need to match this as well
+    });
 
-   res.clearCookie('auth-token', {
-    path: '/',
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // Match the setting when the cookie was set
-    sameSite: 'Strict' // Optionally, you might need to match this as well
-  });
-
-  res.status(204).send()
-
-
+    res.status(204).send();
   } catch (error) {
-
-    console.log(error)
-
-  } 
-}
+    console.log(error);
+  }
+};
 
 module.exports.tokenCheck = async (req, res) => {
-  
   const token = req.cookies["auth-token"];
 
   if (!token) {
@@ -57,7 +58,6 @@ module.exports.tokenCheck = async (req, res) => {
   }
 
   try {
-
     const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
 
     const _id = decoded._id;
@@ -65,7 +65,6 @@ module.exports.tokenCheck = async (req, res) => {
     const user = await User.findOne({ _id: _id });
 
     res.status(200).json({ _id: user._id, username: user.username });
-
   } catch (error) {
     console.log(error);
     if (error instanceof jwt.TokenExpiredError) {
@@ -76,7 +75,7 @@ module.exports.tokenCheck = async (req, res) => {
       return res.status(500).send("An unexpected error occurred.");
     }
   }
-}
+};
 
 module.exports.signup_post = async (req, res) => {
   const { username, password } = req.body;
@@ -106,13 +105,15 @@ module.exports.login_post = async (req, res) => {
     }
 
     const token = generateAuthToken(user);
-    res.cookie("auth-token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Use secure cookies in production
-      sameSite: "Strict", // or "Lax" based on your requirements
-    }).json({ userID: user._id, username: user.username });
+    res
+      .cookie("auth-token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+        sameSite: "Strict", // or "Lax" based on your requirements
+      })
+      .json({ userID: user._id, username: user.username });
   } catch (err) {
-    console.log(error)
+    console.log(error);
     const errors = handleErrors(err);
     res.status(400).json(errors);
   }
