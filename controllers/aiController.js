@@ -26,6 +26,7 @@ module.exports.ai_getAnalysis = async (req, res) => {
     }
 
     let mostRecentTests = await Test.find({ userID: _id })
+      .select("eventLog") // Only select 'eventLog' and 'words' fields
       .sort({ timestamp: -1 })
       .limit(3);
 
@@ -43,13 +44,39 @@ module.exports.ai_getAnalysis = async (req, res) => {
         {
           role: "system",
           content:
-            "You are an AI typing data analyst. Your goal is to analyze a user's typing performance from a JSON object. Pay attention to what letters and letter combinations the user struggles with and with that in mind generate 50 words that would be good for the user to practice with. Return with a string with each word separated by a comma. Give your reasoning as to why you chose each word and how it connects to an error the user made in their typing tests",
+            "You are an AI typing data analyst. Your goal is to analyze a user's typing performance from a JSON object.",
         },
         {
           role: "user",
           content:
-            "This JSON file contains 3 tests and is what you'll be analyzing as an AI typing data analyst: " +
-            mostRecentTests,
+            "I want you to look over these three typing tests I give you. You are going to look through each test's eventLog and find typing errors that happen all 3 tests try to find the most commonly mistyped letters and explain as to why the user makes that mistake. User an inner monologue for all of your thinking. Find the most commonly misspelled letters by counting how many times each letter in the alphabet gets mistyped in the eventlog. Order them from highest to lowest, if tied make also include it.. If you can't recognize more than two letters the user struggles with, don't force yourself to find more. Just state that you cannot find another letter the user struggles with. At the end include 50 words that MUST contain at least one of the mistyped letters. " +
+            "Give your response in this EXACT JSON format: " +
+            `{
+  "mistakes": [
+    {
+      "letter": "i",
+      "mistype_count": 5,
+      "mistyped_as": ["t", "g", "r", "u", "o", "Backspace", "c"],
+      "possible_reason": "The letter 'i' is a key that is often typed with the right index finger. It's possible that the user's right hand positioning or finger accuracy is causing these mistakes."
+    },
+    {
+      "letter": "z",
+      "mistype_count": 3,
+      "mistyped_as": ["l", "Backspace", "other incorrect characters"],
+      "possible_reason": "The letter 'z' is relatively less common in daily typing compared to other letters. The user might not have developed a strong muscle memory for this letter."
+    },
+    {
+      "letter": "o",
+      "mistype_count": 2,
+      "mistyped_as": ["x", "t", "w", "k", "Backspace"],
+      "possible_reason": "It seems like the user might have issues with the position of the letter 'o' on the keyboard or with distinguishing it from other nearby letters."
+    }
+  ],
+  "practiceWords": [
+    
+  ]
+}
+`,
         },
       ],
       max_tokens: 4096,

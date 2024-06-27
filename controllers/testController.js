@@ -194,6 +194,7 @@ module.exports.test_post = async (req, res) => {
         type: passedTest.settings.type,
         length: passedTest.settings.length,
         count: passedTest.settings.count,
+        difficulty: passedTest.settings.difficulty,
       },
       results: {
         correctOnlyWPM: passedTest.results.correctOnlyWPM,

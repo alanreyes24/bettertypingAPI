@@ -22,14 +22,15 @@ const wordsSchema = new mongoose.Schema({
   rawWPMArray: {
     type: Array,
     default: [],
-  }
+  },
 });
 
 // Define the Settings sub-schema
 const settingsSchema = new mongoose.Schema({
   type: { type: String, required: true, default: "time" },
-  length: { type: Number, required: true, default: 0 }, // don't know if i should make this required
-  count: { type: Number, required: true, default: 0 }, // don't know if i should make this required
+  length: { type: Number, required: true, default: 0 },
+  count: { type: Number, required: true, default: 0 },
+  difficulty: { type: String, required: true, default: "normal" },
 });
 
 // Define the Results sub-schema
