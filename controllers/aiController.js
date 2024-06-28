@@ -48,28 +48,12 @@ module.exports.ai_getAnalysis = async (req, res) => {
     const eventLogs = mostRecentTests.map((test) => test.eventLog);
     const flattenedEventLogs = eventLogs.flat();
 
-    // Define the number of chunks to split the data into
-    const totalChunks = 5;
-    const eventLogChunks = Array.from({ length: totalChunks }, () => []);
+    // Convert the entire data to a single chunk
+    const chunkContent = JSON.stringify(flattenedEventLogs);
 
-    // Distribute events evenly across chunks using a round-robin method
-    flattenedEventLogs.forEach((event, index) => {
-      const chunkIndex = index % totalChunks;
-      eventLogChunks[chunkIndex].push(event);
-    });
-
-    // Initialize objects to store combined results
-    const combinedMistakes = {};
-    const combinedPracticeWords = new Set();
-    let totalTokens = 0;
-
-    // Process each chunk
-    for (const chunk of eventLogChunks) {
-      const chunkContent = JSON.stringify(chunk);
-
-      // Construct the prompt for OpenAI
-      const prompt = `
-You will be provided with a portion of eventLogs from typing tests. Follow the instructions exactly and do not use any discretion.
+    // Construct the prompt for OpenAI
+    const prompt = `
+You will be provided with eventLogs from typing tests. Follow the instructions exactly and do not use any discretion.
 
 Instructions:
 1. Examine the 'eventlog' objects.
@@ -77,7 +61,7 @@ Instructions:
 3. If the 'intended' letter does not match the 'typed' letter, increment a counter for the 'intended' letter.
 4. Keep a detailed record of each 'intended' letter and the letters it was mistyped as, along with their frequencies.
 5. After processing all events, generate a JSON object with the letters sorted by their mistype count in descending order.
-6. Provide 25 practice words containing at least one of the mistyped letters.
+6. Provide exactly 50 practice words containing at least two of the top 5 most mistyped letters.
 
 Respond in this JSON format:
 {
@@ -105,87 +89,111 @@ Below are the eventLogs from the typing tests:
 ${chunkContent}
 `;
 
+    try {
+      // Call OpenAI API with the prompt and get the response
+      const response = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are an AI typing data analyst. Your goal is to analyze a user's typing performance from a JSON object.",
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        max_tokens: 3500,
+        temperature: 0.1,
+        top_p: 0.8,
+      });
+
+      // Validate and parse the response
+      let jsonResponse;
       try {
-        // Call OpenAI API with the prompt and get the response
-        const response = await openai.chat.completions.create({
-          model: "gpt-3.5-turbo",
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are an AI typing data analyst. Your goal is to analyze a user's typing performance from a JSON object.",
-            },
-            {
-              role: "user",
-              content: prompt,
-            },
-          ],
-          max_tokens: 3500,
-          temperature: 0.1,
-          top_p: 0.8,
-        });
-
-        const jsonResponse = JSON.parse(response.choices[0].message.content);
-
-        // Aggregate mistakes from the current chunk into the combinedMistakes object
-        jsonResponse.mistakes.forEach((mistake) => {
-          if (combinedMistakes[mistake.letter]) {
-            combinedMistakes[mistake.letter].mistype_count +=
-              mistake.mistype_count;
-            combinedMistakes[mistake.letter].mistyped_as = Array.from(
-              new Set([
-                ...combinedMistakes[mistake.letter].mistyped_as,
-                ...mistake.mistyped_as,
-              ])
-            );
-          } else {
-            combinedMistakes[mistake.letter] = mistake;
-          }
-        });
-
-        // Aggregate practice words into the combinedPracticeWords set
-        jsonResponse.practiceWords.forEach((word) =>
-          combinedPracticeWords.add(word)
-        );
-
-        const usage = response.usage;
-        totalTokens += usage.total_tokens;
-        console.log(`Tokens used for this chunk: ${usage.total_tokens}`);
-        console.log(`Prompt tokens: ${usage.prompt_tokens}`);
-        console.log(`Completion tokens: ${usage.completion_tokens}`);
-      } catch (aiError) {
-        console.log("Error in OpenAI API response:", aiError);
+        jsonResponse = JSON.parse(response.choices[0].message.content);
+      } catch (parseError) {
+        console.error("Failed to parse JSON response from OpenAI:", parseError);
+        console.error("Raw response:", response.choices[0].message.content);
+        return res
+          .status(500)
+          .send("Failed to parse JSON response from OpenAI.");
       }
+
+      // Extract mistakes and sort by mistype count in descending order
+      const sortedMistakes = jsonResponse.mistakes.sort(
+        (a, b) => b.mistype_count - a.mistype_count
+      );
+
+      // Select the top 5 most mistyped letters
+      const top5Mistakes = sortedMistakes.slice(0, 5);
+      const top5Letters = top5Mistakes.map((mistake) => mistake.letter);
+
+      // Filter practice words to include only those containing at least two of the top 5 most mistyped letters
+      const practiceWords = jsonResponse.practiceWords.filter((word) => {
+        const wordLetters = new Set(word);
+        let count = 0;
+        top5Letters.forEach((letter) => {
+          if (wordLetters.has(letter)) count++;
+        });
+        return count >= 2;
+      });
+
+      // Ensure we have exactly 50 practice words
+      if (practiceWords.length < 50) {
+        const additionalWords = jsonResponse.practiceWords.filter(
+          (word) =>
+            !practiceWords.includes(word) &&
+            word.split("").filter((letter) => top5Letters.includes(letter))
+              .length >= 2
+        );
+        practiceWords.push(
+          ...additionalWords.slice(0, 50 - practiceWords.length)
+        );
+      } else {
+        practiceWords = practiceWords.slice(0, 50);
+      }
+
+      // Ensure all words have at least two of the top 5 most mistyped letters
+      const validatedPracticeWords = practiceWords.filter((word) => {
+        const wordLetters = new Set(word);
+        let count = 0;
+        top5Letters.forEach((letter) => {
+          if (wordLetters.has(letter)) count++;
+        });
+        return count >= 2;
+      });
+
+      // If after validation we don't have 50 words, fill up with dummy words or handle as needed
+      while (validatedPracticeWords.length < 50) {
+        validatedPracticeWords.push("dummyword"); // Add your logic to handle insufficient words
+      }
+
+      // Prepare the final result object
+      const finalResult = {
+        mistakes: top5Mistakes,
+        practiceWords: validatedPracticeWords.slice(0, 50),
+      };
+
+      // Update the user's nextAITest field with the practiceWords
+      user.nextAITest = { practiceWords: finalResult.practiceWords };
+      await user.save(); // Save the user document with the updated nextAITest field
+
+      // Send the final result as a response
+      res.status(200).send(finalResult);
+      console.log(finalResult);
+
+      // Log the token usage
+      const usage = response.usage;
+      const totalTokens = usage.total_tokens;
+      console.log(`Total tokens used: ${totalTokens}`);
+      console.log(`Prompt tokens: ${usage.prompt_tokens}`);
+      console.log(`Completion tokens: ${usage.completion_tokens}`);
+    } catch (aiError) {
+      console.log("Error in OpenAI API response:", aiError);
+      res.status(500).send("An error occurred while processing AI analysis.");
     }
-
-    // Convert the combined mistakes object to an array and sort by mistype count in descending order
-    const aggregatedMistakesArray = Object.values(combinedMistakes).sort(
-      (a, b) => b.mistype_count - a.mistype_count
-    );
-
-    // Select the top 5 most mistyped letters
-    const top5Mistakes = aggregatedMistakesArray.slice(0, 5);
-    const top5Letters = top5Mistakes.map((mistake) => mistake.letter);
-
-    // Filter practice words to include only those containing at least one of the top 5 most mistyped letters
-    const filteredPracticeWords = Array.from(combinedPracticeWords).filter(
-      (word) => top5Letters.some((letter) => word.includes(letter))
-    );
-
-    // Prepare the final result object
-    const finalResult = {
-      mistakes: top5Mistakes,
-      practiceWords: filteredPracticeWords,
-    };
-
-    // Update the user's nextAITest field with the filteredPracticeWords
-    user.nextAITest = { practiceWords: filteredPracticeWords };
-    await user.save(); // Save the user document with the updated nextAITest field
-
-    // Send the final result as a response
-    res.status(200).send(finalResult);
-    console.log(finalResult);
-    console.log(`Total tokens used: ${totalTokens}`);
   } catch (error) {
     console.log("Server error:", error);
     res.status(500).send("An error occurred");
