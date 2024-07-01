@@ -6,52 +6,67 @@ const { OpenAI } = require("openai");
 
 dotenv.config();
 
-module.exports.ai_getAnalysis = async (req, res) => {
-  // Retrieve the JWT token from cookies
+module.exports.getAIWordList = async (req, res) => {
   let token = req.cookies["auth-token"];
 
-  // If no token is found, return an access denied response
   if (!token) {
     return res.status(401).send("Access denied. No token provided.");
   }
 
   try {
-    // Verify and decode the JWT token
     const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
     const _id = decoded._id;
 
-    // Find the user by ID in the database
     const user = await User.findOne({ _id: _id });
 
-    // If user is not found, return a 404 response
     if (!user) {
       return res.status(404).send("User not found.");
     }
 
-    // Fetch the three most recent typing tests of the user, selecting only the 'eventLog' field
+    let aiTestWords = user.nextAITest;
+
+    res.status(200).send(aiTestWords);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("An error occurred while processing your request.");
+  }
+};
+
+module.exports.ai_getAnalysis = async (req, res) => {
+  let token = req.cookies["auth-token"];
+
+  if (!token) {
+    return res.status(401).send("Access denied. No token provided.");
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
+    const _id = decoded._id;
+
+    const user = await User.findOne({ _id: _id });
+
+    if (!user) {
+      return res.status(404).send("User not found.");
+    }
+
     let mostRecentTests = await Test.find({ userID: _id })
       .select("eventLog")
       .sort({ timestamp: -1 })
       .limit(3);
 
-    // If no tests are found, return a 401 response
     if (!mostRecentTests || mostRecentTests.length === 0) {
       return res.status(401).send("User has not taken any tests.");
     }
 
-    // Initialize OpenAI with the API key from environment variables
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    // Extract event logs from the most recent tests and flatten them into a single array
     const eventLogs = mostRecentTests.map((test) => test.eventLog);
     const flattenedEventLogs = eventLogs.flat();
 
-    // Convert the entire data to a single chunk
     const chunkContent = JSON.stringify(flattenedEventLogs);
 
-    // Construct the prompt for OpenAI
     const prompt = `
 You will be provided with eventLogs from typing tests. Follow the instructions exactly and do not use any discretion.
 
@@ -90,7 +105,6 @@ ${chunkContent}
 `;
 
     try {
-      // Call OpenAI API with the prompt and get the response
       const response = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [
@@ -109,10 +123,14 @@ ${chunkContent}
         top_p: 0.8,
       });
 
-      // Validate and parse the response
       let jsonResponse;
       try {
-        jsonResponse = JSON.parse(response.choices[0].message.content);
+        // Strip code block delimiters
+        const rawContent = response.choices[0].message.content;
+        const jsonContent = rawContent
+          .replace(/^```json\s*/i, "")
+          .replace(/```$/, "");
+        jsonResponse = JSON.parse(jsonContent);
       } catch (parseError) {
         console.error("Failed to parse JSON response from OpenAI:", parseError);
         console.error("Raw response:", response.choices[0].message.content);
@@ -121,16 +139,13 @@ ${chunkContent}
           .send("Failed to parse JSON response from OpenAI.");
       }
 
-      // Extract mistakes and sort by mistype count in descending order
       const sortedMistakes = jsonResponse.mistakes.sort(
         (a, b) => b.mistype_count - a.mistype_count
       );
 
-      // Select the top 5 most mistyped letters
       const top5Mistakes = sortedMistakes.slice(0, 5);
       const top5Letters = top5Mistakes.map((mistake) => mistake.letter);
 
-      // Filter practice words to include only those containing at least two of the top 5 most mistyped letters
       const practiceWords = jsonResponse.practiceWords.filter((word) => {
         const wordLetters = new Set(word);
         let count = 0;
@@ -140,7 +155,6 @@ ${chunkContent}
         return count >= 2;
       });
 
-      // Ensure we have exactly 50 practice words
       if (practiceWords.length < 50) {
         const additionalWords = jsonResponse.practiceWords.filter(
           (word) =>
@@ -155,7 +169,6 @@ ${chunkContent}
         practiceWords = practiceWords.slice(0, 50);
       }
 
-      // Ensure all words have at least two of the top 5 most mistyped letters
       const validatedPracticeWords = practiceWords.filter((word) => {
         const wordLetters = new Set(word);
         let count = 0;
@@ -165,26 +178,17 @@ ${chunkContent}
         return count >= 2;
       });
 
-      // If after validation we don't have 50 words, fill up with dummy words or handle as needed
-      while (validatedPracticeWords.length < 50) {
-        validatedPracticeWords.push("dummyword"); // Add your logic to handle insufficient words
-      }
-
-      // Prepare the final result object
       const finalResult = {
         mistakes: top5Mistakes,
         practiceWords: validatedPracticeWords.slice(0, 50),
       };
 
-      // Update the user's nextAITest field with the practiceWords
       user.nextAITest = { practiceWords: finalResult.practiceWords };
-      await user.save(); // Save the user document with the updated nextAITest field
+      await user.save();
 
-      // Send the final result as a response
-      res.status(200).send(finalResult);
       console.log(finalResult);
+      res.status(200).send(finalResult);
 
-      // Log the token usage
       const usage = response.usage;
       const totalTokens = usage.total_tokens;
       console.log(`Total tokens used: ${totalTokens}`);
