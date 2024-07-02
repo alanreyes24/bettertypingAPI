@@ -24,8 +24,13 @@ module.exports.getAIWordList = async (req, res) => {
     }
 
     let aiTestWords = user.nextAITest;
+    console.log(aiTestWords);
 
-    res.status(200).send(aiTestWords);
+    if (aiTestWords) {
+      res.status(200).send(aiTestWords);
+    } else {
+      throw new Error("No AI test words available.");
+    }
   } catch (error) {
     console.error(error);
     res.status(500).send("An error occurred while processing your request.");
@@ -118,7 +123,7 @@ ${chunkContent}
             content: prompt,
           },
         ],
-        max_tokens: 3500,
+        max_tokens: 1800,
         temperature: 0.1,
         top_p: 0.8,
       });
