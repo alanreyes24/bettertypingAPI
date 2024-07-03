@@ -32,8 +32,14 @@ module.exports.getAIWordList = async (req, res) => {
       throw new Error("No AI test words available.");
     }
   } catch (error) {
-    console.error(error);
-    res.status(500).send("An error occurred while processing your request.");
+    if (error.name === "JsonWebTokenError") {
+      res.status(400).send("Invalid token.");
+    } else if (error.name === "TokenExpiredError") {
+      res.status(401).send("Token expired.");
+    } else {
+      console.error(error);
+      res.status(500).send("An error occurred while processing your request.");
+    }
   }
 };
 
@@ -201,10 +207,21 @@ ${chunkContent}
       console.log(`Completion tokens: ${usage.completion_tokens}`);
     } catch (aiError) {
       console.log("Error in OpenAI API response:", aiError);
+
+      if (aiError.response && aiError.response.data) {
+        console.error("OpenAI API error response:", aiError.response.data);
+      }
+
       res.status(500).send("An error occurred while processing AI analysis.");
     }
   } catch (error) {
-    console.log("Server error:", error);
-    res.status(500).send("An error occurred");
+    if (error.name === "JsonWebTokenError") {
+      res.status(400).send("Invalid token.");
+    } else if (error.name === "TokenExpiredError") {
+      res.status(401).send("Token expired.");
+    } else {
+      console.error("Server error:", error);
+      res.status(500).send("An error occurred.");
+    }
   }
 };

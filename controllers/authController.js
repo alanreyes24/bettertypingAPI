@@ -1,3 +1,5 @@
+// authController.js
+
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -13,7 +15,7 @@ const generateAuthToken = (user) => {
 const handleErrors = (err) => {
   console.log(err.message);
   console.log(err);
-  let errors = err.message;
+  let errors = {};
 
   if (err.message.includes("User validation failed: ")) {
     if (
@@ -21,14 +23,14 @@ const handleErrors = (err) => {
         "User validation failed: username could not be found"
       )
     ) {
-      errors = "Your username / password was incorrect";
+      errors.message = "Your username / password was incorrect";
     }
     if (
       err.message.includes(
         "User validation failed: password: Minimum password length is 6 characters"
       )
     ) {
-      errors = "Your password needs to be a minimum of 6 characters";
+      errors.message = "Your password needs to be a minimum of 6 characters";
     }
   }
 
@@ -46,7 +48,8 @@ module.exports.logout = async (req, res) => {
 
     res.status(204).send();
   } catch (error) {
-    console.log(error);
+    console.error("Error during logout:", error);
+    res.status(500).send("An error occurred while logging out.");
   }
 };
 
@@ -64,9 +67,13 @@ module.exports.tokenCheck = async (req, res) => {
 
     const user = await User.findOne({ _id: _id });
 
+    if (!user) {
+      return res.status(404).send("User not found.");
+    }
+
     res.status(200).json({ _id: user._id, username: user.username });
   } catch (error) {
-    console.log(error);
+    console.error("Error during token check:", error);
     if (error instanceof jwt.TokenExpiredError) {
       return res.status(401).send("Token has expired.");
     } else if (error instanceof jwt.JsonWebTokenError) {
@@ -84,8 +91,13 @@ module.exports.signup_post = async (req, res) => {
     const user = await User.create({ username, password });
     res.status(201).json(user);
   } catch (err) {
-    const errors = handleErrors(err);
-    res.status(400).json(errors);
+    if (err.code === 11000) {
+      // Duplicate key error
+      res.status(409).json({ message: "Username already exists" });
+    } else {
+      const errors = handleErrors(err);
+      res.status(400).json(errors);
+    }
   }
 };
 
@@ -113,7 +125,7 @@ module.exports.login_post = async (req, res) => {
       })
       .json({ userID: user._id, username: user.username });
   } catch (err) {
-    console.log(error);
+    console.error("Error during login:", err);
     const errors = handleErrors(err);
     res.status(400).json(errors);
   }

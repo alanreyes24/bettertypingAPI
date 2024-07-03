@@ -60,7 +60,9 @@ module.exports.test_getTimeTestRankings = async (req, res) => {
     res.status(200).send(filteredTests);
   } catch (err) {
     console.error(err);
-    res.status(500).send(err.message);
+    res
+      .status(500)
+      .send("An error occurred while fetching time test rankings.");
   }
 };
 
@@ -91,8 +93,6 @@ module.exports.test_getWordTestRankings = async (req, res) => {
         { $sort: { "results.trueWPM": -1 } },
       ]);
     } else if (timeFrame === "daily") {
-      // Log all documents to see the timestamp
-
       filteredTests = await Test.aggregate([
         { $unwind: "$results" },
         { $unwind: "$settings" },
@@ -110,13 +110,15 @@ module.exports.test_getWordTestRankings = async (req, res) => {
     if (!filteredTests || filteredTests.length === 0) {
       return res
         .status(404)
-        .send("No tests found matching the specified duration or time-frame");
+        .send("No tests found matching the specified count or time-frame");
     }
 
     res.status(200).send(filteredTests);
   } catch (err) {
     console.error(err);
-    res.status(500).send(err.message);
+    res
+      .status(500)
+      .send("An error occurred while fetching word test rankings.");
   }
 };
 
@@ -141,7 +143,7 @@ module.exports.test_getAllByUser = async (req, res) => {
     const allUserTests = await Test.find({ userID: _id });
 
     if (!allUserTests) {
-      return res.status(404).send("No test for this user found");
+      return res.status(404).send("No tests for this user found");
     }
 
     if (allUserTests && allUserTests.length > 0) {
@@ -150,8 +152,14 @@ module.exports.test_getAllByUser = async (req, res) => {
       res.status(404).send("No tests found for this user.");
     }
   } catch (error) {
-    console.log(error);
-    res.status(500).send("Internal Server Error");
+    if (error.name === "JsonWebTokenError") {
+      res.status(400).send("Invalid token.");
+    } else if (error.name === "TokenExpiredError") {
+      res.status(401).send("Token expired.");
+    } else {
+      console.error(error);
+      res.status(500).send("Internal Server Error");
+    }
   }
 };
 
@@ -169,10 +177,22 @@ module.exports.test_getUserMostRecentTest = async (req, res) => {
 
     const test = await Test.findOne({ userID: _id }).sort({ timestamp: -1 });
 
+    if (!test) {
+      return res.status(404).send("No recent test found for this user.");
+    }
+
     res.status(200).send(test);
   } catch (error) {
-    console.error(error);
-    return res.status(500).send(error.message);
+    if (error.name === "JsonWebTokenError") {
+      res.status(400).send("Invalid token.");
+    } else if (error.name === "TokenExpiredError") {
+      res.status(401).send("Token expired.");
+    } else {
+      console.error(error);
+      res
+        .status(500)
+        .send("An error occurred while fetching the most recent test.");
+    }
   }
 };
 
@@ -206,13 +226,14 @@ module.exports.test_post = async (req, res) => {
       timestamp: passedTest.timestamp,
     });
 
-    // Assuming you want to send the created test document back in the response
     res.status(200).send(test);
   } catch (error) {
     console.error(error);
 
-    if (error.code == 11000) {
-      res.status(500).send(error);
+    if (error.code === 11000) {
+      res.status(409).send("Duplicate key error: " + error.message);
+    } else if (error.name === "ValidationError") {
+      res.status(400).send("Validation error: " + error.message);
     } else {
       res.status(500).send("An error occurred while processing your request.");
     }
