@@ -38,7 +38,7 @@ const resultsSchema = new mongoose.Schema({
   accuracy: { type: Number, required: true, default: 0 },
 });
 
-const testSchema = new mongoose.Schema({
+const AITestSchema = new mongoose.Schema({
   userID: {
     type: String,
     required: true,
@@ -70,4 +70,4 @@ const testSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("Test", testSchema);
+module.exports = mongoose.model("AITest", AITestSchema);

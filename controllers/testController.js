@@ -1,5 +1,3 @@
-// testRoutes.js
-
 const jwt = require("jsonwebtoken");
 const Test = require("../models/Test");
 const User = require("../models/User");
@@ -123,7 +121,6 @@ module.exports.test_getWordTestRankings = async (req, res) => {
 };
 
 module.exports.test_getAllByUser = async (req, res) => {
-  console.log("route hit");
   const token = req.cookies["auth-token"];
 
   if (!token) {
