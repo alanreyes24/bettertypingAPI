@@ -85,3 +85,36 @@ module.exports.ai_test = async (req, res) => {
     }
   }
 };
+
+module.exports.ai_getMostRecentTest = async (req, res) => {
+  const token = req.cookies["auth-token"];
+
+  if (!token) {
+    return res.status(401).send("No token provided.");
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
+
+    const _id = decoded._id;
+
+    const test = await AITest.findOne({ userID: _id }).sort({ timestamp: -1 });
+
+    if (!test) {
+      return res.status(404).send("No recent test found for this user.");
+    }
+
+    res.status(200).send(test);
+  } catch (error) {
+    if (error.name === "JsonWebTokenError") {
+      res.status(400).send("Invalid token.");
+    } else if (error.name === "TokenExpiredError") {
+      res.status(401).send("Token expired.");
+    } else {
+      console.error(error);
+      res
+        .status(500)
+        .send("An error occurred while fetching the most recent test.");
+    }
+  }
+};

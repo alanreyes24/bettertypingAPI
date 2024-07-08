@@ -6,4 +6,6 @@ router.get("/ai/allByUser", AITestController.ai_getAllByUser);
 
 router.post("/ai/test", AITestController.ai_test);
 
+router.get("/ai/mostRecentTest", AITestController.ai_getMostRecentTest);
+
 module.exports = router;
