@@ -43,7 +43,10 @@ mongoose
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then((result) => app.listen(3090))
+  .then((result) => {
+    const PORT = process.env.PORT || 3090; // Use the PORT provided by Railway or fallback to 3090
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  })
   .catch((err) => console.log(err));
 
 // Routes
