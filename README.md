@@ -1,1 +1,3 @@
-# splitsuit-api
+# betterTypingAPI
+
+The node.js backend for bettertyping!
