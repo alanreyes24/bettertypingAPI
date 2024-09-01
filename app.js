@@ -18,7 +18,11 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Add CORS middleware
-const allowedOrigins = ["http://localhost:5173"];
+const allowedOrigins = [
+  "http://localhost:5173", // For local development
+  "https://your-frontend-domain.com", // Replace with your actual frontend domain
+  "https://bettertypingapi-production.up.railway.app", // Public Railway domain
+];
 
 app.use(
   cors({
