@@ -59,3 +59,8 @@ app.use(authRoutes);
 app.use(testRoutes);
 app.use(aiRoutes);
 app.use(aiTestRoutes);
+
+// Basic Test Endpoint
+app.get("/ping", (req, res) => {
+  res.send("pong");
+});
