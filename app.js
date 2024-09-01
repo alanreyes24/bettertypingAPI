@@ -20,8 +20,7 @@ app.use(cookieParser());
 // Add CORS middleware
 const allowedOrigins = [
   "http://localhost:5173", // For local development
-  "https://your-frontend-domain.com", // Replace with your actual frontend domain
-  "https://bettertypingapi-production.up.railway.app", // Public Railway domain
+  "https://bettertyping-production.up.railway.app", // Your actual frontend domain
 ];
 
 app.use(
@@ -35,7 +34,7 @@ app.use(
       }
       return callback(null, true);
     },
-    credentials: true,
+    credentials: true, // Allow cookies to be sent
   })
 );
 
