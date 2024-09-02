@@ -121,10 +121,17 @@ module.exports.test_getWordTestRankings = async (req, res) => {
 };
 
 module.exports.test_getAllByUser = async (req, res) => {
+  console.log("Cookies: ", req.cookies); // Log cookies
+  console.log("Hello!");
   const token = req.cookies["auth-token"];
 
+  // Log the token value even if it is null or undefined
+  console.log("Token: ", token);
+
   if (!token) {
-    return res.status(401).send("Access denied. No token provided.");
+    return res
+      .status(401)
+      .send(`Access denied. No token provided. Token Value: ${token}`);
   }
 
   try {
@@ -164,7 +171,7 @@ module.exports.test_getUserMostRecentTest = async (req, res) => {
   const token = req.cookies["auth-token"];
 
   if (!token) {
-    return res.status(401).send("No token provided.");
+    return res.status(401).send("No token provided...");
   }
 
   try {

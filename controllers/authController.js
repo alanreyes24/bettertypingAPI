@@ -117,11 +117,13 @@ module.exports.login_post = async (req, res) => {
     }
 
     const token = generateAuthToken(user);
+
     res
       .cookie("auth-token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production", // Use secure cookies in production
-        sameSite: "Strict", // or "Lax" based on your requirements
+        secure: process.env.NODE_ENV === "production", // Secure true in production
+        sameSite: "Lax", // More lenient SameSite policy for testing
+        maxAge: 2 * 60 * 60 * 1000, // 2 hours in milliseconds
       })
       .json({ userID: user._id, username: user.username });
   } catch (err) {
