@@ -19,8 +19,9 @@ app.use(cookieParser());
 
 // Add CORS middleware
 const allowedOrigins = [
-  "http://localhost:5173", // For local development
-  "https://bettertyping-production.up.railway.app", // Your actual frontend domain
+  "http://localhost:5173",
+  "https://bettertyping-production.up.railway.app",
+  "https://bettertyping.net",
 ];
 
 app.use(
