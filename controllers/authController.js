@@ -1,5 +1,3 @@
-// authController.js
-
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -122,7 +120,7 @@ module.exports.login_post = async (req, res) => {
       .cookie("auth-token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production", // Secure true in production
-        sameSite: "Lax", // More lenient SameSite policy for testing
+        sameSite: "None", // Allows cross-site requests
         maxAge: 2 * 60 * 60 * 1000, // 2 hours in milliseconds
       })
       .json({ userID: user._id, username: user.username });

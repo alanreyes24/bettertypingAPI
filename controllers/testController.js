@@ -122,7 +122,6 @@ module.exports.test_getWordTestRankings = async (req, res) => {
 
 module.exports.test_getAllByUser = async (req, res) => {
   console.log("Cookies Received: ", req.cookies);
-
   const token = req.cookies["auth-token"];
 
   if (!token) {

@@ -26,8 +26,8 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin: allowedOrigins,
-    credentials: true, // Allow cookies to be sent
+    origin: allowedOrigins, // Ensure 'allowedOrigins' contains the frontend URL
+    credentials: true, // Allows cookies to be sent
   })
 );
 
