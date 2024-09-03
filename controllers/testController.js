@@ -121,12 +121,9 @@ module.exports.test_getWordTestRankings = async (req, res) => {
 };
 
 module.exports.test_getAllByUser = async (req, res) => {
-  console.log("Cookies: ", req.cookies); // Log cookies
-  console.log("Hello!");
-  const token = req.cookies["auth-token"];
+  console.log("Cookies Received: ", req.cookies);
 
-  // Log the token value even if it is null or undefined
-  console.log("Token: ", token);
+  const token = req.cookies["auth-token"];
 
   if (!token) {
     return res
