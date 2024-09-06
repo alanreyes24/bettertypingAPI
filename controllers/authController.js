@@ -40,8 +40,8 @@ module.exports.logout = async (req, res) => {
     res.clearCookie("auth-token", {
       path: "/",
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Match the setting when the cookie was set
-      sameSite: "Strict", // Optionally, you might need to match this as well
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "None",
     });
 
     res.status(204).send();
@@ -119,9 +119,9 @@ module.exports.login_post = async (req, res) => {
     res
       .cookie("auth-token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production", // Secure true in production
-        sameSite: "None", // Allows cross-site requests
-        maxAge: 2 * 60 * 60 * 1000, // 2 hours in milliseconds
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "None",
+        maxAge: 2 * 60 * 60 * 1000,
       })
       .json({ userID: user._id, username: user.username });
   } catch (err) {
