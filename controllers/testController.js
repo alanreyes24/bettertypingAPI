@@ -209,6 +209,7 @@ module.exports.test_post = async (req, res) => {
         incorrectLetters: passedTest.words.incorrectLetters,
         trueWPMArray: passedTest.words.trueWPMArray,
         rawWPMArray: passedTest.words.rawWPMArray,
+        chartData: passedTest.words.chartData,
       },
       settings: {
         type: passedTest.settings.type,

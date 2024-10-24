@@ -22,6 +22,10 @@ const wordsSchema = new mongoose.Schema({
     type: Array,
     default: [],
   },
+  chartData: {
+    type: Array,
+    default: [],
+  },
 });
 
 const settingsSchema = new mongoose.Schema({
