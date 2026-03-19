@@ -22,13 +22,14 @@ const allowedOrigins = [
   "http://localhost:5173",
   "https://bettertyping-production.up.railway.app",
   "https://bettertyping.net",
+  "https://www.bettertyping.net",
 ];
 
 app.use(
   cors({
     origin: allowedOrigins, // Ensure 'allowedOrigins' contains the frontend URL
     credentials: true, // Allows cookies to be sent
-  })
+  }),
 );
 
 // Database connection
