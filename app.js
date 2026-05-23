@@ -22,6 +22,7 @@ const allowedOrigins = [
   "http://localhost:5173",
   "https://bettertyping-production.up.railway.app",
   "https://bettertyping.net",
+  "https://bettertypingapi-production.up.railway.app",
   "https://www.bettertyping.net",
 ];
 
