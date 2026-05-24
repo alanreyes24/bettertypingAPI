@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const Test = require("../models/Test");
 const User = require("../models/User");
+const GuestTest = require("../models/GuestTest");
 
 module.exports.test_getTimeTestRankings = async (req, res) => {
   try {
@@ -201,6 +202,51 @@ module.exports.test_post = async (req, res) => {
 
   try {
     const test = await Test.create({
+      userID: passedTest.userID,
+      username: passedTest.username,
+      words: {
+        wordsList: passedTest.words.wordList,
+        correctLetters: passedTest.words.correctLetters,
+        incorrectLetters: passedTest.words.incorrectLetters,
+        trueWPMArray: passedTest.words.trueWPMArray,
+        rawWPMArray: passedTest.words.rawWPMArray,
+        chartData: passedTest.words.chartData,
+      },
+      settings: {
+        type: passedTest.settings.type,
+        length: passedTest.settings.length,
+        count: passedTest.settings.count,
+        difficulty: passedTest.settings.difficulty,
+      },
+      results: {
+        correctOnlyWPM: passedTest.results.correctOnlyWPM,
+        rawWPM: passedTest.results.rawWPM,
+        trueWPM: passedTest.results.trueWPM,
+        accuracy: passedTest.results.accuracy,
+      },
+      eventLog: passedTest.eventLog,
+      timestamp: passedTest.timestamp,
+    });
+
+    res.status(200).send(test);
+  } catch (error) {
+    console.error(error);
+
+    if (error.code === 11000) {
+      res.status(409).send("Duplicate key error: " + error.message);
+    } else if (error.name === "ValidationError") {
+      res.status(400).send("Validation error: " + error.message);
+    } else {
+      res.status(500).send("An error occurred while processing your request.");
+    }
+  }
+};
+
+module.exports.test_postGuest = async (req, res) => {
+  const passedTest = req.body;
+
+  try {
+    const test = await GuestTest.create({
       userID: passedTest.userID,
       username: passedTest.username,
       words: {

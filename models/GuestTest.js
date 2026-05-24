@@ -22,6 +22,10 @@ const wordsSchema = new mongoose.Schema({
     type: Array,
     default: [],
   },
+  chartData: {
+    type: Array,
+    default: [],
+  },
 });
 
 const settingsSchema = new mongoose.Schema({
@@ -38,7 +42,7 @@ const resultsSchema = new mongoose.Schema({
   accuracy: { type: Number, required: true, default: 0 },
 });
 
-const AITestSchema = new mongoose.Schema({
+const GuestTestSchema = new mongoose.Schema({
   userID: {
     type: String,
     required: true,
@@ -70,4 +74,4 @@ const AITestSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("AITest", AITestSchema);
+module.exports = mongoose.model("GuestTest", GuestTestSchema);

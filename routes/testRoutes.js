@@ -5,6 +5,7 @@ const router = express.Router();
 const testController = require("../controllers/testController");
 
 router.post("/test", testController.test_post);
+router.post("/test/guest", testController.test_postGuest);
 
 router.get("/test/timeRankings", testController.test_getTimeTestRankings);
 
