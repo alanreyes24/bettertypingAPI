@@ -8,8 +8,6 @@ dotenv.config();
 
 const authRoutes = require("./routes/authRoutes");
 const testRoutes = require("./routes/testRoutes");
-const aiRoutes = require("./routes/aiRoutes");
-const aiTestRoutes = require("./routes/AITestRoutes");
 const app = express();
 
 // Middleware
@@ -51,8 +49,6 @@ mongoose
 app.get("/", (req, res) => res.send("404 page not found"));
 app.use(authRoutes);
 app.use(testRoutes);
-app.use(aiRoutes);
-app.use(aiTestRoutes);
 
 // Basic Test Endpoint
 app.get("/ping", (req, res) => {
