@@ -19,8 +19,11 @@ app.use(cookieParser());
 const allowedOrigins = [
   "http://localhost:5173",
   "https://bettertyping-production.up.railway.app",
-  "https://bettertyping.net",
   "https://bettertypingapi-production.up.railway.app",
+  "https://bettertyping.dev",
+  "https://www.bettertyping.dev",
+  // legacy domain, safe to drop once bettertyping.net is fully retired
+  "https://bettertyping.net",
   "https://www.bettertyping.net",
 ];
 
