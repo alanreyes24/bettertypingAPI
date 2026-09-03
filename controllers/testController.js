@@ -200,10 +200,27 @@ module.exports.test_getUserMostRecentTest = async (req, res) => {
 module.exports.test_post = async (req, res) => {
   const passedTest = req.body;
 
+  const token = req.cookies["auth-token"];
+
+  if (!token) {
+    return res.status(401).send("No token provided.");
+  }
+
   try {
+    // Identity comes from the signed token, never from the request body, so a
+    // test can only ever be saved under the account that submitted it.
+    const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
+    const _id = decoded._id;
+
+    const user = await User.findOne({ _id: _id });
+
+    if (!user) {
+      return res.status(404).send("User not found.");
+    }
+
     const test = await Test.create({
-      userID: passedTest.userID,
-      username: passedTest.username,
+      userID: _id,
+      username: user.username,
       words: {
         wordsList: passedTest.words.wordList,
         correctLetters: passedTest.words.correctLetters,
@@ -232,7 +249,11 @@ module.exports.test_post = async (req, res) => {
   } catch (error) {
     console.error(error);
 
-    if (error.code === 11000) {
+    if (error.name === "JsonWebTokenError") {
+      res.status(400).send("Invalid token.");
+    } else if (error.name === "TokenExpiredError") {
+      res.status(401).send("Token expired.");
+    } else if (error.code === 11000) {
       res.status(409).send("Duplicate key error: " + error.message);
     } else if (error.name === "ValidationError") {
       res.status(400).send("Validation error: " + error.message);
